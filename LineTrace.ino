@@ -7,7 +7,11 @@ Servo servoL;
 int v[6]={0,0,0,0,0,0}; //6連センサの値を格納する配列
 int b=400;//黒線上であるかとないかの閾値を仮に400とする
 int rotate;//センサの値
+int integral =0; //integralの初期値
+int deri =0;//微分するための値格納
 float k = 0.056; //PID制御の値
+float ki =0.005;//Iの係数
+float kd= 0.1;//Dの係数
 void setup() {
 servoR.attach(4);//右車輪のモータのピンが4に配線されている場合のアタッチ
 servoL.attach(5);//○○○.(i)でi番目のピンのモータを関連づける
@@ -28,11 +32,13 @@ void loop(){
   //センサの値をモニターに出力
   Serial.print(rotate);
   Serial.print(" ");
-
+  //pidの値取得
+  pid=road(rotate);
   //走行
-  runRotate(rotate*k);
-  Serial.print(rotate*k);
+  runRotate(pid);
+  Serial.print(pid);
   Serial.println();
+  lasterror=rotate;//前回の値を保持
 }
 
 void R_run(){
@@ -86,6 +92,21 @@ int read(){
   }
   
   return rotate;
+  
+}
+int road (error){
+  intergral=error+integral;//積分（誤差の足し算）
+  Serial.print(integral);
+  Serial.print(" ");
+  if(integral>1000){ //1000以上であれば1000に
+    integral=1000;
+  }
+  if(integral<-1000){  //-1000以下であれば-1000に固定
+    integral=-1000;
+  }
+  deri=rotate-lasterror;//微分の値(前回との差)
+
+  pid=error*k+integral*ki+deri*kd;//pid制御の値
 }
 
 
